@@ -1,0 +1,9 @@
+{
+    "burroEnergiaIcial": 150,
+    "salud": 90,
+    "estadoSalud": "Bueno",
+    "pasto": 250,
+    "number": 321,
+    "startAge": 15,
+    "deathAge": 4000
+}
