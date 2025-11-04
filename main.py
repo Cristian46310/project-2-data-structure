@@ -1,19 +1,9 @@
-from Back.Repository.Config import Config as ConfigRepo
-from Back.models.Config import Config
+from Back.utils.DonkeySimulation import DonkeySimulation
 
-
-repo = ConfigRepo()
-
-repo.modifyConfig(
-    newBurroEnergiaIcial=150,
-    newSalud=90,
-    newEstadoSalud="Bueno",
-    newPasto=250,
-    newNumber=321,
-    newStartAge=15,
-    newDeathAge=4000
-)
-
-
-config_modificada = repo.readJsonConfig()
-print(config_modificada)
+if __name__ == "__main__":
+    sim = DonkeySimulation()
+    # Prueba de calculateDistance entre dos estrellas
+    start_star = "Alpha1"
+    end_star = "Alpha53"
+    # imprime el resultado de calculateDistance para evitar obtener None en la salida
+    sim.calculateDistance(start_star, end_star)

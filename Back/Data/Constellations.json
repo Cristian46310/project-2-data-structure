@@ -9,15 +9,18 @@
           "linkedTo": [
             {
               "starId": 2,
-              "distance": 120
+              "distance": 120,
+              "blocked": false
             },
             {
               "starId": 4,
-              "distance": 87
+              "distance": 87,
+              "blocked": false
             },
             {
               "starId": 5,
-              "distance": 101
+              "distance": 101,
+              "blocked": false
             }
           ],
           "radius": 0.4,
@@ -35,15 +38,18 @@
           "linkedTo": [
             {
               "starId": 1,
-              "distance": 120
+              "distance": 120,
+              "blocked": false
             },
             {
               "starId": 7,
-              "distance": 45
+              "distance": 45,
+              "blocked": true
             },
             {
               "starId": 3,
-              "distance": 17
+              "distance": 17,
+              "blocked": false
             }
           ],
           "radius": 0.2,
@@ -61,15 +67,18 @@
           "linkedTo": [
             {
               "starId": 5,
-              "distance": 86
+              "distance": 86,
+              "blocked": false
             },
             {
               "starId": 2,
-              "distance": 17
+              "distance": 17,
+              "blocked": false
             },
             {
               "starId": 9,
-              "distance": 15
+              "distance": 15,
+              "blocked": true
             }
           ],
           "radius": 1,
@@ -92,15 +101,18 @@
           "linkedTo": [
             {
               "starId": 14,
-              "distance": 120
+              "distance": 120,
+              "blocked": false
             },
             {
               "starId": 17,
-              "distance": 87
+              "distance": 87,
+              "blocked": true
             },
             {
               "starId": 11,
-              "distance": 101
+              "distance": 101,
+              "blocked": false
             }
           ],
           "radius": 0.6,
@@ -118,11 +130,13 @@
           "linkedTo": [
             {
               "starId": 15,
-              "distance": 120
+              "distance": 120,
+              "blocked": false
             },
             {
               "starId": 17,
-              "distance": 45
+              "distance": 45,
+              "blocked": false
             }
           ],
           "radius": 0.8,
@@ -140,7 +154,8 @@
           "linkedTo": [
             {
               "starId": 12,
-              "distance": 15
+              "distance": 15,
+              "blocked": false
             }
           ],
           "radius": 1,

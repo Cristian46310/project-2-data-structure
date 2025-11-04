@@ -1,0 +1,9 @@
+Te falta agregar:
+
+🔸 Reglas del burro (energía, pasto, salud, vida, investigación).
+
+🔸 Simulación del recorrido (visitar estrellas, actualizar valores).
+
+🔸 Control de caminos bloqueados.
+
+🔸 Reporte de resultados.

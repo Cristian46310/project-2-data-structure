@@ -64,15 +64,40 @@ class ReadConstellations:
                 for stars in list:
                     tuplaIdDistance.append((stars['starId'], stars['distance']))
             return tuplaIdDistance
-        
-
-
-        
-
     
+    def ReadNameStarById(self, id):
+        constellationsJson = self.readJsonConstellations()
+        if constellationsJson is None:
+            return None
+        else:
+            for constellation in constellationsJson['constellations']:
+                for star in constellation['starts']:
+                    if star['id'] == id:
+                        return star['label']
+        return None
+    
+    def readDistanceBetweenStars(self, star_label):
+        constellationsJson = self.readJsonConstellations()
+        if constellationsJson is None:
+            return None
+        else:
+            for constellation in constellationsJson['constellations']:
+                for star in constellation['starts']:
+                    for link in star['linkedTo']:
+                        linkedStarId = link['starId']
+                        linkedStarName = self.ReadNameStarById(linkedStarId)
+                        if linkedStarName == star_label:
+                            return link['distance']
+        return None
 
-  
-                        
-                    
+
+
+
+
+
+
+
+
+
 
 
