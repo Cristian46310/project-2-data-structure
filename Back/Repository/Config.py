@@ -29,7 +29,7 @@ class Config:
         config.append(newConfig)
         self.saveConfig(newConfig)
     
-    def modifyConfig(self,newBurroEnergiaIcial,newSalud,newEstadoSalud,newPasto,newNumber,newStartAge,newDeathAge):
+    def modifyConfig(self,newBurroEnergiaIcial,newEstadoSalud,newPasto,newNumber,newStartAge,newDeathAge):
         if not os.path.exists(self.RUTA_DE_CONFIGURACION) or os.path.getsize(self.RUTA_DE_CONFIGURACION) == 0:
             print("No hay configuración para modificar.")
             return
@@ -37,14 +37,12 @@ class Config:
             configData = self.readJsonConfig()
             if configData:
                 configData['burroEnergiaIcial'] = newBurroEnergiaIcial
-                configData['salud'] = newSalud
                 configData['estadoSalud'] = newEstadoSalud
                 configData['pasto'] = newPasto
                 configData['number'] = newNumber
                 configData['startAge'] = newStartAge
                 configData['deathAge'] = newDeathAge
             self.saveConfig(configData)
-        
 
 
             

@@ -25,7 +25,19 @@ class ServiceReadConstellations:
     def getStarNameById(self, id):
         return self.repository.ReadNameStarById(id)
     
-    def getDistanceBetweenStars(self, start1):
-        return self.repository.readDistanceBetweenStars(start1)
+    def getDistanceBetweenStars(self, start1,start2):
+        return self.repository.readDistanceBetweenStars(start1,start2)
+    
+    def readTimeToEatGrass(self, starLabel):
+        return self.repository.readTimeToEatGrass(starLabel)
+    
+    def readAmountOfEnergy(self, starLabel):
+        return self.repository.readAmountOfEnergy(starLabel)
+    
+    def readTimeToEatGrassService(self, starLabel):
+        return self.repository.readTimeToEatGrass(starLabel)
+    
+    def manageConnection(self, starA, starB,enabled):
+        return self.repository.setConnectionStatus(starA, starB, enabled)
     
     

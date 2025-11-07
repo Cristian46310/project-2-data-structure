@@ -10,5 +10,5 @@ class ControllerConfig:
     def createConfig(self, config):
         self.service.createConfig(config)
     
-    def modifyConfig(self, newBurroEnergiaIcial, newSalud, newEstadoSalud, newPasto, newNumber, newStartAge, newDeathAge):
-        self.service.modifyConfig(newBurroEnergiaIcial, newSalud, newEstadoSalud, newPasto, newNumber, newStartAge, newDeathAge)
+    def modifyConfig(self, newBurroEnergiaIcial,  newEstadoSalud, newPasto, newNumber, newStartAge, newDeathAge):
+        self.service.modifyConfig(newBurroEnergiaIcial,  newEstadoSalud, newPasto, newNumber, newStartAge, newDeathAge)

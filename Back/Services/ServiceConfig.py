@@ -10,6 +10,7 @@ class ServiceConfig:
     def createConfig(self,config):
         self.configRepo.createConfig(config)
     
-    def modifyConfig(self,newBurroEnergiaIcial,newSalud,newEstadoSalud,newPasto,newNumber,newStartAge,newDeathAge):
-        self.configRepo.modifyConfig(newBurroEnergiaIcial,newSalud,newEstadoSalud,newPasto,newNumber,newStartAge,newDeathAge)
+    def modifyConfig(self,newBurroEnergiaIcial,newEstadoSalud,newPasto,newNumber,newStartAge,newDeathAge):
+        self.configRepo.modifyConfig(newBurroEnergiaIcial,newEstadoSalud,newPasto,newNumber,newStartAge,newDeathAge)
+        
         

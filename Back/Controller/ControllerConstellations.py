@@ -25,5 +25,17 @@ class ControllerConstellations:
     def fetchStarNameById(self, id):
         return self.service.getStarNameById(id)
     
-    def fetchDistanceBetweenStars(self, start1):
-        return self.service.getDistanceBetweenStars(start1)
+    def fetchDistanceBetweenStars(self, start1,start2):
+        return self.service.getDistanceBetweenStars(start1,start2)
+    
+    def fetchTimeToEatGrass(self, starLabel):
+        return self.service.readTimeToEatGrass(starLabel)
+    
+    def fetchAmountOfEnergy(self, starLabel):
+        return self.service.readAmountOfEnergy(starLabel)
+    
+    def fetchTimeToEatGrassService(self, starLabel):
+        return self.service.readTimeToEatGrassService(starLabel)
+    
+    def setConnectionStatus(self, starA, starB, enabled):
+        return self.service.manageConnection(starA, starB, enabled)

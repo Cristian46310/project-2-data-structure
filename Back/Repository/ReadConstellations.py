@@ -76,22 +76,73 @@ class ReadConstellations:
                         return star['label']
         return None
     
-    def readDistanceBetweenStars(self, star_label):
+    def readDistanceBetweenStars(self, start_label, end_label):
         constellationsJson = self.readJsonConstellations()
         if constellationsJson is None:
             return None
-        else:
-            for constellation in constellationsJson['constellations']:
-                for star in constellation['starts']:
+
+        for constellation in constellationsJson['constellations']:
+            for star in constellation['starts']:
+                if star['label'] == start_label:  # Origen
                     for link in star['linkedTo']:
                         linkedStarId = link['starId']
                         linkedStarName = self.ReadNameStarById(linkedStarId)
-                        if linkedStarName == star_label:
+                        if linkedStarName == end_label:  # Destino
                             return link['distance']
         return None
+    
 
+    def readTimeToEatGrass(self, star_label):
+        constellationsJson = self.readJsonConstellations()
+        if constellationsJson is None:
+            return None
+        for constellation in constellationsJson['constellations']:
+            for star in constellation['starts']:
+                if star['label'] == star_label:
+                    return star['timeToEat']
+        return None
+    
+    def readAmountOfEnergy(self, star_label):
+        constellationsJson = self.readJsonConstellations()
+        if constellationsJson is None:
+            return None
+        for constellation in constellationsJson['constellations']:
+            for star in constellation['starts']:
+                if star['label'] == star_label:
+                    print(star['amountOfEnergy'])
+                    return star['amountOfEnergy']
+        return None
+    
+    def setConnectionStatus(self, starA_label, starB_label, enabled):
+        """
+        Bloquea o habilita el camino entre dos estrellas.
+        enabled=True -> habilitar (blocked=False)
+        enabled=False -> bloquear (blocked=True)
+        """
+        constellationsJson = self.readJsonConstellations()
+        if constellationsJson is None:
+            return False
 
+        updated = False
+        for constellation in constellationsJson['constellations']:
+            for star in constellation['starts']:
+                if star['label'] == starA_label:
+                    for link in star['linkedTo']:
+                        linkedStarName = self.ReadNameStarById(link['starId'])
+                        if linkedStarName == starB_label:
+                            link['blocked'] = not enabled
+                            updated = True
+                if star['label'] == starB_label:
+                    for link in star['linkedTo']:
+                        linkedStarName = self.ReadNameStarById(link['starId'])
+                        if linkedStarName == starA_label:
+                            link['blocked'] = enabled
+                            updated = True
 
+        if updated:
+            with open(self.RUTA_DE_CONSTELACIONES, 'w') as file:
+                json.dump(constellationsJson, file, indent=4)
+        return updated
 
 
 
