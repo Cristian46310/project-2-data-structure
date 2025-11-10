@@ -181,22 +181,12 @@ class DonkeySimulation:
         return energyLost
     
 
-
-
     def eatGrass(self, grass, donkeyEnergy, stateHealth, timeToEatGrass):
-        """
-        Aplica regeneración de energía del burro al comer pasto.
-        Retorna:
-        energy -> energía actualizada
-        grass -> pasto restante
-        """
         if donkeyEnergy >= 50 or grass <= 0:
-            return donkeyEnergy, grass  # No necesita comer o no hay pasto
+            return donkeyEnergy, grass 
 
-        # Cantidad de pasto que puede comer según el tiempo de estancia
-        grassConsumed = min(grass, timeToEatGrass * 1)  # 1 kg por unidad de tiempo
+        grassConsumed = min(grass, timeToEatGrass * 1)  
 
-        # Aumenta energía según estado de salud se reajustaron los valores por la gran caida de la energia al hacer los calculos
         if stateHealth.lower() == "excelente":
             donkeyEnergy += grassConsumed * 10
         elif stateHealth.lower() == "regular":
@@ -205,8 +195,8 @@ class DonkeySimulation:
             donkeyEnergy += grassConsumed * 4
 
         donkeyEnergy = min(donkeyEnergy, 100)
-        print(donkeyEnergy)  # Limita energía al máximo
-        grass -= grassConsumed  # Reduce el pasto disponible
+        print(donkeyEnergy)  
+        grass -= grassConsumed  
 
         print(f"El burro come {grassConsumed} kg de pasto, energía: {donkeyEnergy}%")
 
@@ -293,7 +283,6 @@ class DonkeySimulation:
         if is_hypergiant:
             energy += energy * 0.50
             grass *= 2
-            # Verifica que el destino exista en la siguiente galaxia
             for constellation in contellationsJson['constellations']:
                 if constellation['name'] == nextGalaxy:
                     for star in constellation['starts']:
@@ -341,7 +330,6 @@ class DonkeySimulation:
                 energy, grass = self.eatGrass(grass, energy, healthState, timeToEatGrass)
 
             diseaseResult = self.research(mission)
-            #isInstace: verifica si lo que nos devuelve el metodo es una tupla (valor, tipo de dato)
             if isinstance(diseaseResult, tuple):
                 healthState, lifeLost, diseaseName = diseaseResult
                 life += lifeLost
@@ -349,7 +337,6 @@ class DonkeySimulation:
             else:
                 print("No se detectaron enfermedades.")
 
-            # Salto intergaláctico si corresponde
             hyper = self.hypergiant(currentStar, constellation, nextStarInNewGalaxy, energy, grass)
             if hyper:
                 energy, grass = hyper
