@@ -4,6 +4,167 @@ from Back.Controller.ControllerConstellations import ControllerConstellations
 from Back.utils.FlujoOptimo import dijkstra
 
 class DonkeySimulation:
+    """
+    DonkeySimulation
+    High-level simulation manager for a "donkey" that travels between stars, consumes energy
+    and grass, ages over distance traveled, and can be affected by random diseases or
+    special star types (hypergiants). This class coordinates configuration, constellation
+    data and a Dijkstra pathfinder to run route simulations and update persistent config.
+    Dependencies / Expected environment:
+    - ControllerConfig: provides fetchConfig() and modifyConfig(...) for persistent donkey config.
+    - ControllerConstellations: provides fetchJsonConstellations(), fetchDistanceBetweenStars(a, b),
+        and fetchTimeToEatGrassService(star).
+    - dijkstra: provides flujoOptimo(start, end) -> {'path': [...], 'distance': total_distance}
+    - random module is used in validateDiases for probabilistic disease selection.
+    Configuration structure expected from ControllerConfig.fetchConfig():
+    {
+            'burroEnergiaIcial': float,   # initial energy percent (0-100)
+            'startAge': float,            # starting "age" or life-years
+            'deathAge': float,            # age at which the donkey dies
+            'pasto': float,               # available grass (kg)
+            'estadoSalud': str,           # health state string, e.g. "excelente" / "regular" / ...
+            'number': Any                 # auxiliary identifier persisted by modifyConfig
+    Public Methods
+    --------------
+    __init__():
+            Initialize internal helpers and fetch configuration and constellation data.
+            Side effects: constructs ControllerConfig, ControllerConstellations and dijkstra instances
+            and reads their data into self.configData and self.dataConstellations.
+    calculateDistance(start1, start2):
+            Return the distance between two stars using the constellations service.
+            Parameters:
+                    start1 (str): label/name of the first star
+                    start2 (str): label/name of the second star
+            Returns:
+                    float or None: distance between stars, or None if not available.
+    calculateEnergy(distance):
+            Compute energy lost when traveling a given distance.
+            Parameters:
+                    distance (float): distance traveled
+            Returns:
+                    float: energy lost (distance * 0.3)
+    eatGrass(grass, donkeyEnergy, stateHealth, timeToEatGrass):
+            Simulate the donkey eating grass to regain energy.
+            Parameters:
+                    grass (float): available grass in kg before eating
+                    donkeyEnergy (float): current energy percent (0-100)
+                    stateHealth (str): health state affecting energy recovery ("excelente", "regular", others)
+                    timeToEatGrass (float): time units available to eat (affects kg consumed; 1 kg per time unit)
+            Returns:
+                    tuple: (newEnergy: float, remainingGrass: float)
+            Notes:
+                    - If donkeyEnergy >= 50 or no grass available, returns inputs unchanged.
+                    - Grass consumed = min(grass, timeToEatGrass * 1).
+                    - Energy gained per kg depends on stateHealth:
+                            - "excelente": +10 energy per kg
+                            - "regular": +6 energy per kg
+                            - otherwise: +4 energy per kg
+                    - Energy is clamped at 100.
+                    - Prints progress and amount eaten as side effects.
+    lifeDonkeyDistance(star1, star2):
+            Search the constellation dataset for stars and compute the donkey's life after
+            traveling the distance between star1 and star2 if both are found in the same constellation.
+            Parameters:
+                    star1 (str), star2 (str): labels of the two stars to find
+            Returns:
+                    float or None: updated lifeYears (startAge + distance) if both stars found and life < deathAge,
+                                                 prints death message and returns None if life >= deathAge or required data missing.
+            Notes:
+                    - Uses internal self.dataConstellations and self.configData.
+                    - If constellation/config data is missing, returns None.
+    research(mission):
+            Perform mission-related checks and possibly trigger disease validation or simple energy changes.
+            Parameters:
+                    mission (str): one of 'exploración', 'recoleccion', 'transporte', 'entretención', 'dormir' (case-insensitive)
+            Returns:
+                    - If mission is exploration / recoleccion / transporte: returns the result of validateDiases()
+                        (may be a tuple describing a disease or a health string).
+                    - If 'entretención': returns configData['startAge'] + 10 (energy-like value).
+                    - If 'dormir': returns configData['startAge'] + 20.
+            Side effects:
+                    - Prints short messages for some mission types.
+    validateDiases():
+            Randomly determine whether the donkey has a disease and, if so, select one and
+            return its severity and life impact.
+            Returns:
+                    - If no disease: returns the string 'El burro está saludable'.
+                    - If disease: returns a tuple (healthState: str, lifeLost: int, diseaseName: str)
+                        where healthState is one of 'bien', 'regular', 'deplorable', 'grave'.
+            Behavior:
+                    - Uses random.choices with approximate 30% chance of disease.
+                    - Disease-to-lifeLost mapping:
+                            'Constipación Cósmica' -> 5
+                            'Radiación Galáctica Aguda' -> 20
+                            'Síndrome del Casco Atascado' -> 10
+                            'Neuralgia del Cometa' -> 30
+            Side effects:
+                    - Prints whether a disease was detected.
+    hypergiant(starName, nextGalaxy, nextStar, energy, grass):
+            If the current star is marked as a hypergiant in the constellation data, apply special
+            energy and grass multipliers and validate the existence of a destination star in the provided galaxy.
+            Parameters:
+                    starName (str): label of the current star
+                    nextGalaxy (str): name of the target galaxy/constellation to search for the destination star
+                    nextStar (str): label of the intended next star within nextGalaxy
+                    energy (float): current energy value
+                    grass (float): current grass amount
+            Returns:
+                    tuple (newEnergy: float, newGrass: float) if hypergiant effect applies and destination exists,
+                    otherwise None.
+            Effects:
+                    - If star is hypergiant: energy increases by 50% and grass is doubled before checking destination.
+                    - Only returns values if the destination star exists in nextGalaxy.
+    validateEnergy(energy):
+            Clamp energy into the inclusive range [0, 100].
+            Parameters:
+                    energy (float)
+            Returns:
+                    float: clamped energy value
+    simulateRoute(startStar, endStar, constellation, nextStarInNewGalaxy, mission):
+            Simulate the donkey traversing an optimal route found by the dijkstra component,
+            handling energy consumption, grass-eating, disease checks, potential hypergiant jumps,
+            life progression and persisting updated config.
+            Parameters:
+                    startStar (str): starting star label
+                    endStar (str): destination star label
+                    constellation (str): name of the constellation/galaxy used for hypergiant destination checks
+                    nextStarInNewGalaxy (str): destination star label in the next galaxy used by hypergiant()
+                    mission (str): mission type passed to research()
+            Returns:
+                    dict or None:
+                            If successful, returns a dict:
+                            {
+                                    "route": [...],            # list of star labels visited
+                                    "distanceTotal": float,    # total distance returned by dijkstra
+                                    "energyFinal": float,      # final clamped energy
+                                    "lifeFinal": float,        # final lifeYears
+                                    "status": "Vivo"|"Muerto"
+                            If required data or pathfinder result missing, returns None.
+            Behavior and side effects:
+                    - Obtains route and total distance from self.dijkstra.flujoOptimo(startStar, endStar).
+                    - Initializes local state from self.configData:
+                            energy <- 'burroEnergiaIcial'
+                            life   <- 'startAge'
+                            deathAge <- 'deathAge'
+                            grass <- 'pasto'
+                            healthState <- 'estadoSalud'
+                    - Iterates each hop in the route:
+                            - Decreases energy by calculateEnergy(distance between current and next).
+                            - Increments life by the same distance.
+                            - Computes time to eat grass from constellation service, adjusts it, and calls eatGrass()
+                                if energy < 50.
+                            - Calls research(mission); if it returns a disease tuple, applies lifeLost to life and updates healthState.
+                            - Checks hypergiant() to possibly alter energy/grass and perform an intergalactic validation.
+                            - If life >= deathAge or energy <= 0 the loop breaks and the donkey is considered dead.
+                    - After the route, energy is clamped via validateEnergy().
+                    - Calls self.configDonkey.modifyConfig(...) to persist mutated values:
+                            newBurroEnergiaIcial, newEstadoSalud, newPasto, newNumber, newStartAge, newDeathAge
+                    - Prints progress messages during the simulation.
+            Notes:
+                    - The method relies on side-effecting prints and persistent config modifications.
+                    - The sign convention for life progression uses distance as additional "age" units.
+                    - Energy and life may be increased by disease (lifeLost) or hypergiant effects.
+    """
     def __init__(self):
         self.configDonkey = ControllerConfig()
         self.constellations = ControllerConstellations()

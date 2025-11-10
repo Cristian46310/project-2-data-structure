@@ -1,6 +1,45 @@
 from Back.Controller.ControllerConstellations import ControllerConstellations as Constellations
 
 class dijkstra:
+    """
+    dijkstra class: Builds a weighted graph from constellation data and computes shortest paths.
+    This class depends on an external Constellations controller instance (self.controller) to fetch
+    constellation data and to resolve star identifiers into star names. It constructs an in-memory,
+    directed weighted graph of star-to-star links (ignoring links marked as blocked) and implements
+    Dijkstra's algorithm to compute the shortest path (minimum total distance) between two stars.
+    Attributes
+    ----------
+    controller : Constellations
+        A controller object used to fetch constellation JSON data and to map star IDs to star names.
+    Methods
+    -------
+    flujoOptimo(Start, end)
+        Build a graph from constellation data and compute the shortest path between the stars named
+        Start and end. Returns None if no data is available or if the destination is unreachable.
+        Parameters:
+            Start (str): The name of the starting star node.
+            end (str): The name of the destination star node.
+        Returns:
+            dict or None: If a path exists, returns a dict with keys:
+                - 'distance' (float): Total distance of the shortest path.
+                - 'path' (list of str): Ordered list of star names from Start to end inclusive.
+            Returns None if constellation data is missing or if end is unreachable.
+    methodDijkstra(graph, start, end)
+        Run Dijkstra's shortest-path algorithm on an explicit adjacency representation of a graph.
+        The graph is expected to be a dict mapping node names to dicts of neighbor: weight pairs.
+        Parameters:
+            graph (dict): { node_name: { neighbor_name: weight, ... }, ... }
+            start (str): Name of the start node (must be present in graph).
+            end (str): Name of the end node (must be present in graph).
+        Behavior:
+            - Uses a simple O(V^2) implementation (selects the unvisited node with minimal current
+              tentative distance by linear search).
+            - Maintains `distances` (tentative shortest distances) and `previous` (to reconstruct path).
+            - If the end node is unreachable, returns None.
+        Returns:
+            dict or None: On success, returns {'distance': total_distance, 'path': [start, ..., end]}.
+            Returns None if `end` is unreachable (distance is infinite).
+    """
     def __init__(self):
         self.controller = Constellations()
     #Metodo para crear el grafo a partir de los datos de las constelaciones    

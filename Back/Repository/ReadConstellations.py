@@ -2,6 +2,77 @@ import json
 import os
 
 class ReadConstellations:
+    """"
+    ReadConstellations
+    A helper class for reading and manipulating constellation data stored in a JSON file.
+    Attributes
+    - RUTA_DE_CONSTELACIONES (str): Path to the JSON file containing constellation data. Default: "back/Data/Constellations.json".
+    Behavior overview
+    - This class provides methods to load the JSON file, list constellations and their stars,
+        query star attributes and links, compute distances between connected stars, and enable/disable
+        individual links. Most read methods return None if the underlying JSON file is missing,
+        empty, or if a requested item cannot be found.
+    - The method setConnectionStatus modifies the JSON structure in memory and persists changes
+        back to the same file when any update is made.
+    Notes and side effects
+    - All methods assume the JSON structure contains a top-level "constellations" array. Each
+        constellation is expected to contain at least the keys "name" and "starts" (an array of star objects).
+    - Star objects are expected to contain fields such as "id", "label", "timeToEat", "amountOfEnergy",
+        and "linkedTo" (an array of link objects). Link objects are expected to contain "starId",
+        "distance" and optionally "blocked".
+    - readJsonConstellations uses file system operations and JSON parsing. Malformed JSON, missing
+        permissions, or file-system errors will raise built-in exceptions (e.g., OSError, JSONDecodeError)
+        from the underlying libraries.
+    - setConnectionStatus writes updated JSON back to RUTA_DE_CONSTELACIONES when an update occurs.
+        Calling code should ensure concurrent access is handled appropriately (this class does not perform locking).
+    Public methods (summary)
+    - readJsonConstellations() -> dict | None
+            Load and return the parsed JSON content. Returns None and prints a message if the file does not exist
+            or is empty.
+    - allConstellations() -> list[str] | None
+            Return a list of constellation names extracted from the JSON, or None if the JSON cannot be loaded.
+    - findStartsInConstellation(constellationName: str) -> list[str] | None
+            Given a constellation name, return a list of star labels for that constellation, or None if not found.
+    - linksWithStars(constellationName: str) -> list[list[dict]] | None
+            Return the raw "linkedTo" lists for every star in the named constellation (i.e., a list where each element
+            is the "linkedTo" array of a star). Returns None if JSON cannot be loaded or the constellation is absent.
+    - findStartByIdAndName(id, constellationName: str) -> str | None
+            Find a star by its id within the specified constellation and return its label. Returns None if not found.
+    - splitConstellattionsLinks(constellationName: str) -> list[tuple] | None
+            Flatten the link structures for a constellation into a list of tuples (starId, distance).
+            Returns None if JSON cannot be loaded or the constellation is absent.
+    - ReadNameStarById(id) -> str | None
+            Search all constellations for a star with the given id and return its label, or None if not found.
+    - readDistanceBetweenStars(start_label: str, end_label: str) -> (int|float) | None
+            Search for a direct link from a star with label start_label to a linked star matching end_label.
+            If found return the link's "distance"; otherwise return None.
+    - readTimeToEatGrass(star_label: str) -> (int|float) | None
+            Return the "timeToEat" property for a star with the specified label, or None if not found.
+    - readAmountOfEnergy(star_label: str) -> (int|float) | None
+            Return the "amountOfEnergy" property for a star with the specified label, or None if not found.
+            This method also prints the energy value as a side effect.
+    - setConnectionStatus(starA_label: str, starB_label: str, enabled: bool) -> bool
+            Enable or disable the connection between two stars by updating their corresponding link objects'
+            "blocked" property. Parameter enabled maps to the stored "blocked" flag as:
+                enabled=True  -> link['blocked'] = False
+                enabled=False -> link['blocked'] = True
+            The method updates both directions when present. If any changes were made the JSON file is rewritten.
+            Returns True if any link was updated; otherwise False.
+    Example usage
+            rc = ReadConstellations()
+            all_names = rc.allConstellations()
+            stars = rc.findStartsInConstellation("Orion")
+            dist = rc.readDistanceBetweenStars("Betelgeuse", "Rigel")
+            success = rc.setConnectionStatus("StarA", "StarB", enabled=False)
+    Exceptions
+    - The class methods intentionally return None (or False for setConnectionStatus) for many "not found"
+        conditions. However, file I/O and JSON parsing still propagate underlying exceptions (e.g., OSError,
+        PermissionError, json.JSONDecodeError). Caller code should catch these where appropriate.
+    Limitations
+    - No validation is performed on the JSON schema beyond simple key accesses; unexpected structures may
+        raise exceptions.
+    - There is no concurrency control for simultaneous reads/writes to the JSON file.
+        """
     def __init__(self):
         self.RUTA_DE_CONSTELACIONES = "back/Data/Constellations.json"
 
