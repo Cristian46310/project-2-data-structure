@@ -75,7 +75,13 @@ class ReadConstellations:
         """
     def __init__(self):
         self.RUTA_DE_CONSTELACIONES = "back/Data/Constellations.json"
-
+        # Construir ruta absoluta al JSON en Back/Data independientemente del working dir
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Data'))
+        self.RUTA_DE_CONSTELACIONES = os.path.join(base_dir, 'Constellations.json')
+        # fallback (mantener compatibilidad) si por algún motivo no existe
+        if not os.path.exists(self.RUTA_DE_CONSTELACIONES):
+            self.RUTA_DE_CONSTELACIONES = "back/Data/Constellations.json"
+    
     def readJsonConstellations(self):
         if not os.path.exists(self.RUTA_DE_CONSTELACIONES) or os.path.getsize(self.RUTA_DE_CONSTELACIONES) == 0:
             print("No hay datos existentes dentro de archivo")
