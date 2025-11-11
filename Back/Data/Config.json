@@ -1,7 +1,7 @@
 {
     "burroEnergiaIcial": 100,
-    "estadoSalud": "excelente",
-    "pasto": 50,
+    "estadoSalud": "mala",
+    "pasto": 48,
     "number": 321,
     "startAge": 5,
     "deathAge": 4000

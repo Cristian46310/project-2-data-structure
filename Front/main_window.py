@@ -29,6 +29,12 @@ class MainWindow:
         self.current_mission_config = None
         self.simulation_running = False
 
+        # nueva cola de misiones y referencias UI
+        self.mission_queue = []
+        self.mission_listbox = None
+        self.stats_labels = {}
+        self._stats_updater_id = None
+
         # CONFIGURACIÓN DE LA REJILLA PRINCIPAL
         self.root.grid_columnconfigure(0, weight=0)
         self.root.grid_columnconfigure(1, weight=1)
@@ -137,6 +143,22 @@ class MainWindow:
                    command=self.stop_visualization, state="disabled")
         self.stop_button.pack(pady=6, fill="x")
         
+        # BOTÓN: Guardar configuración en tiempo real
+        ttk.Button(button_frame, text="💾 Guardar Ahora", command=self.update_burro_config).pack(pady=6, fill="x")
+
+        # CONTROLES DE COLA DE MISIONES
+        queue_frame = ttk.LabelFrame(scrollable_frame, text="Cola de Misiones (n recorridos)", padding=8)
+        queue_frame.pack(pady=8, fill="x", padx=5)
+
+        self.mission_listbox = tk.Listbox(queue_frame, height=6)
+        self.mission_listbox.pack(fill="both", pady=4, padx=2)
+
+        q_buttons = ttk.Frame(queue_frame)
+        q_buttons.pack(fill="x", pady=2)
+        ttk.Button(q_buttons, text="➕ Agregar a Cola", command=self.add_mission_to_queue).pack(side="left", expand=True, fill="x", padx=2)
+        ttk.Button(q_buttons, text="▶ Iniciar Secuencia", command=self.start_mission_sequence).pack(side="left", expand=True, fill="x", padx=2)
+        ttk.Button(q_buttons, text="🧹 Limpiar Cola", command=lambda: (self.mission_queue.clear(), self.update_mission_listbox())).pack(side="left", expand=True, fill="x", padx=2)
+
     def create_map_canvas(self):
         ttk.Label(self.map_visualization, text="Mapa de Constelaciones", font=("Arial", 12, "bold")).pack(pady=5)
 
@@ -178,6 +200,22 @@ class MainWindow:
         ttk.Label(self.monitoring_panel, text="Panel de Monitoreo", font=("Arial", 12, "bold")).pack(pady=5)
         self.status_label = ttk.Label(self.monitoring_panel, text="Estado: Listo", font=("Arial", 10))
         self.status_label.pack()
+
+        # Panel de estadísticas en tiempo real
+        stats_frame = ttk.Frame(self.monitoring_panel)
+        stats_frame.pack(pady=6, fill="x")
+        labels = {
+            'health': 'Salud',
+            'age': 'Edad',
+            'energy': 'Energía',
+            'grass': 'Pasto',
+            'current_star': 'Estrella Actual',
+            'missions_left': 'Misiones en Cola'
+        }
+        for key, txt in labels.items():
+            lbl = ttk.Label(stats_frame, text=f"{txt}: --")
+            lbl.pack(anchor="w")
+            self.stats_labels[key] = lbl
 
     def load_constellations(self):
         print("Cargando archivo JSON de constelaciones...")
@@ -255,23 +293,56 @@ class MainWindow:
                 json.dump(config, file, indent=4)
 
             print("✓ Config.json actualizado correctamente.")
+            # refrescar estadísticas visibles tras guardar
+            self.refresh_stats_from_config()
         except Exception as e:
             print("✗ Error al actualizar Config.json:", e)
 
-    def start_visualization(self):
-        """Inicia una NUEVA simulación desde el principio."""
+    # NUEVO: Agregar misión a la cola desde los campos actuales
+    def add_mission_to_queue(self):
+        start_star = self.start_star_var.get().strip()
+        end_star = self.end_star_var.get().strip() or None
+        mission = self.mission_var.get().strip() or "exploration"
+
+        if not start_star or not end_star:
+            self.status_label.config(text="Error: la misión requiere estrella inicio y fin")
+            return
+
+        entry = {'start': start_star, 'end': end_star, 'mission': mission}
+        self.mission_queue.append(entry)
+        self.update_mission_listbox()
+        self.status_label.config(text=f"Misión agregada: {start_star} → {end_star}")
+
+    # NUEVO: Actualizar Listbox de cola
+    def update_mission_listbox(self):
+        if self.mission_listbox is None:
+            return
+        self.mission_listbox.delete(0, tk.END)
+        for i, m in enumerate(self.mission_queue, start=1):
+            self.mission_listbox.insert(tk.END, f"{i}. {m['start']} → {m['end']} ({m['mission']})")
+        # actualizar contador de misiones restantes en stats
+        if 'missions_left' in self.stats_labels:
+            self.stats_labels['missions_left'].config(text=f"Misiones en Cola: {len(self.mission_queue)}")
+
+    # NUEVO: Iniciar secuencia completa (usa la cola). La primera ejecución respeta la configuración inicial guardada.
+    def start_mission_sequence(self):
+        if not self.mission_queue:
+            self.status_label.config(text="Cola vacía. Agrega misiones primero.")
+            return
+
+        # Si no hay simulación en curso, arrancar la primera
+        if not self.simulation_running and self.mission_queue:
+            next_m = self.mission_queue.pop(0)
+            self.update_mission_listbox()
+            self._begin_mission(next_m['start'], next_m['end'], None, next_m['mission'], use_config_write=True)
+        else:
+            self.status_label.config(text="Simulación ya en curso.")
+
+    # REFACTORIZACIÓN: Inicio de misión común (usado por start_visualization y secuencias)
+    def _begin_mission(self, start_star, end_star, next_star, mission, use_config_write=False):
         try:
-            start_star = self.start_star_var.get().strip()
-            end_star = self.end_star_var.get().strip() or None
-            next_star = self.next_star_var.get().strip() or None
-            mission = self.mission_var.get().strip() or "exploration"
-
-            if not start_star:
-                self.status_label.config(text="Error: selecciona una estrella inicial")
-                return
-
-            # Actualizar config.json ANTES de iniciar
-            self.update_burro_config()
+            if use_config_write:
+                self.update_burro_config()
 
             donkey_config = {
                 'health': self.health_var.get(),
@@ -289,7 +360,6 @@ class MainWindow:
             print(f"\n🚀 INICIANDO SIMULACIÓN: {start_star} → {end_star}")
 
             constellation_name = "Constelacion del Burro"
-
             result = self.donkey_visualizer.start_route_simulation(start_star, constellation_name, donkey_config)
 
             if result is None:
@@ -303,7 +373,7 @@ class MainWindow:
                 self.continue_button.config(state="normal")
                 self.stop_button.config(state="normal")
                 
-                # Guardar config para siguientes misiones
+                # Guardar config para siguientes misiones (solo meta)
                 self.current_mission_config = {
                     'start_star': start_star,
                     'end_star': end_star,
@@ -316,6 +386,9 @@ class MainWindow:
                     'grass': self.grass_var.get()
                 }
                 
+                # lanzar actualización periódica de stats
+                self._start_periodic_stats()
+
                 # Animar automáticamente hasta destino (se pausa al llegar)
                 self.donkey_visualizer.animate_route(step_callback=self._on_simulation_step)
                 self.status_label.config(text="Simulación en curso... Presiona 'Continuar' para siguiente misión o 'Terminar' para detener")
@@ -323,15 +396,48 @@ class MainWindow:
                 self.status_label.config(text="No se detectó ruta válida")
         except Exception as e:
             self.status_label.config(text=f"Error: {str(e)}")
+            print("Error en _begin_mission:", e)
+
+    # MODIFICAR start_visualization para usar _begin_mission y escribir config inicial
+    def start_visualization(self):
+        """Inicia una NUEVA simulación desde el principio."""
+        try:
+            start_star = self.start_star_var.get().strip()
+            end_star = self.end_star_var.get().strip() or None
+            next_star = self.next_star_var.get().strip() or None
+            mission = self.mission_var.get().strip() or "exploration"
+
+            if not start_star:
+                self.status_label.config(text="Error: selecciona una estrella inicial")
+                return
+
+            # Para el inicio completo, escribir los valores iniciales del burro
+            self._begin_mission(start_star, end_star, next_star, mission, use_config_write=True)
+        except Exception as e:
+            self.status_label.config(text=f"Error: {str(e)}")
             print("Error en start_visualization:", e)
 
+    # MODIFICAR continue_next_mission_handler para priorizar la cola
     def continue_next_mission_handler(self):
-        """Continúa a la siguiente misión asignada."""
-        if not self.current_mission_config:
+        """Continúa a la siguiente misión asignada o toma de la cola si existe."""
+        if not self.current_mission_config and not self.mission_queue:
+            self.status_label.config(text="No hay misión anterior ni cola para continuar")
+            return
+
+        # Si hay cola, tomar siguiente misión de la cola
+        if self.mission_queue:
+            next_m = self.mission_queue.pop(0)
+            self.update_mission_listbox()
+            print(f"\n📍 INICIANDO SIGUIENTE EN COLA: {next_m['start']} → {next_m['end']}")
+            self._begin_mission(next_m['start'], next_m['end'], None, next_m['mission'], use_config_write=False)
+            return
+
+        # Si no hay cola, seguir el flujo anterior (next_star dentro de current_mission_config)
+        config = self.current_mission_config
+        if not config:
             self.status_label.config(text="No hay misión anterior para continuar")
             return
         
-        config = self.current_mission_config
         new_start = config['end_star']
         new_end = config['next_star']
         
@@ -339,9 +445,6 @@ class MainWindow:
             self.status_label.config(text="No hay siguiente estrella asignada. Simulación completada.")
             self.stop_visualization()
             return
-        
-        # Actualizar config.json antes de siguiente misión
-        self.update_burro_config()
         
         # Nueva configuración para siguiente misión
         new_config = {
@@ -386,6 +489,9 @@ class MainWindow:
         self.continue_button.config(state="disabled")
         self.stop_button.config(state="disabled")
         
+        # detener actualización de stats periódica
+        self._stop_periodic_stats()
+
         self.status_label.config(text="Simulación terminada. Presiona 'Iniciar Simulación' para comenzar nueva simulación")
         print("\n❌ SIMULACIÓN TERMINADA\n")
         
@@ -401,6 +507,9 @@ class MainWindow:
             text=f"Paso {step}/{total} - Estrella: {current_star} - Estado: {status}"
         )
         
+        # actualizar estadísticas en pantalla (lee config.json para reflejar estado real)
+        self.refresh_stats_from_config()
+
         # Si llegó al destino (último paso)
         if step == total and status != 'Muerto':
             self._on_route_complete(current_star)
@@ -413,21 +522,80 @@ class MainWindow:
             self.continue_button.config(state="disabled")
             self.stop_button.config(state="disabled")
             self.simulation_running = False
+            self._stop_periodic_stats()
             self.status_label.config(text=f"💀 El burro ha muerto en {current_star}")
 
+    # MODIFICAR _on_route_complete para arrancar automáticamente siguiente misión en cola si existe
     def _on_route_complete(self, arrived_star):
         """Se ejecuta cuando llega al destino."""
         if not self.simulation_running:
             return
         
-        # PAUSAR la simulación - esperar que usuario presione "Continuar"
+        # PAUSAR la simulación - detener animación actual
         self.donkey_visualizer.stop_animation()
         
+        # Si existe una misión en la cola, iniciar automáticamente la siguiente
+        if self.mission_queue:
+            next_m = self.mission_queue.pop(0)
+            self.update_mission_listbox()
+            self.status_label.config(text=f"✅ Llegó a {arrived_star}. Iniciando siguiente misión en cola: {next_m['start']} → {next_m['end']}")
+            print(f"\n✅ LLEGÓ A {arrived_star} - INICIANDO SIGUIENTE EN COLA")
+            # arrancar sin sobrescribir estado del burro (use_config_write=False)
+            self._begin_mission(next_m['start'], next_m['end'], None, next_m['mission'], use_config_write=False)
+            return
+
+        # Si no hay cola, esperar acción del usuario
         self.status_label.config(
             text=f"✅ Llegó a {arrived_star}. Presiona 'Continuar' para seguir o 'Terminar' para detener"
         )
         print(f"\n✅ LLEGÓ A {arrived_star}")
             
+    # NUEVO: refrescar estadísticas leyendo config.json
+    def refresh_stats_from_config(self):
+        config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Back', 'Data', 'config.json'))
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                conf = json.load(f)
+         # map keys defensivamente
+            energy = conf.get('burroEnergiaActual', conf.get('burroEnergiaIcial', self.energy_var.get()))
+            grass = conf.get('pasto', self.grass_var.get())
+            age = conf.get('startAge', self.age_var.get())
+            health = conf.get('estadoSalud', self.health_var.get())
+            current_star = conf.get('currentStar', '?')
+            
+            if 'energy' in self.stats_labels:
+                self.stats_labels['energy'].config(text=f"Energía: {energy}")
+            if 'grass' in self.stats_labels:
+                self.stats_labels['grass'].config(text=f"Pasto: {grass}")
+            if 'age' in self.stats_labels:
+                self.stats_labels['age'].config(text=f"Edad: {age}")
+            if 'health' in self.stats_labels:
+                self.stats_labels['health'].config(text=f"Salud: {health}")
+            if 'current_star' in self.stats_labels:
+                self.stats_labels['current_star'].config(text=f"Estrella Actual: {current_star}")
+            if 'missions_left' in self.stats_labels:
+                self.stats_labels['missions_left'].config(text=f"Misiones en Cola: {len(self.mission_queue)}")
+        except Exception:
+            # silencioso si no existe/config malformado
+            pass
+
+    # NUEVOS: control de actualización periódica de stats mientras la simulación corre
+    def _start_periodic_stats(self):
+        self._stop_periodic_stats()
+        def _upd():
+            self.refresh_stats_from_config()
+            self._stats_updater_id = self.root.after(1000, _upd)
+        _upd()
+
+    def _stop_periodic_stats(self):
+        if self._stats_updater_id:
+            try:
+                self.root.after_cancel(self._stats_updater_id)
+            except Exception:
+                pass
+            self._stats_updater_id = None
+
+
     def _on_mouse_down(self, event):
         self._drag_start = (event.x, event.y)
 
