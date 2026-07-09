@@ -1,4 +1,4 @@
-# Proyecto: Simulación de Viajes Intergalácticos con Burro Científico
+# Proyecto: Simulación de Viajes Intergalácticos con rutas optimas
 
 Este proyecto implementa una simulación de viajes intergalácticos en un entorno de constelaciones, donde un burro científico realiza misiones, gestiona su energía, consume pasto y enfrenta eventos como enfermedades y saltos hipergigantes. El sistema permite la gestión dinámica de caminos entre estrellas, así como la actualización de estados y recursos del burro.
 
